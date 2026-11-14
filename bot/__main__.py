@@ -69,9 +69,13 @@ def main():
               f"buying power ${float(acct.buying_power):,.2f}")
         print(f"Market open now: {clock.is_open}. Next open {clock.next_open}")
         if a.ntfy_topic:
-            Ntfy(a.ntfy_topic)("Bot test", "ntfy is working - you will get trade alerts here.",
-                               tags="white_check_mark")
-            print(f"Sent a test notification to ntfy topic '{a.ntfy_topic}'. Check your phone.")
+            ok = Ntfy(a.ntfy_topic)("Bot test", "ntfy is working - you will get trade alerts here.",
+                                    tags="white_check_mark")
+            if ok:
+                print(f"ntfy accepted a test notification for topic '{a.ntfy_topic}'. "
+                      f"Check your phone, or open https://ntfy.sh/{a.ntfy_topic} in a browser.")
+            else:
+                print("ntfy test FAILED - see the error above. Phone alerts will not work.")
         else:
             print("No ntfy topic set (NTFY_TOPIC) - phone alerts are off.")
         for s in ("QQQ", "SPY"):

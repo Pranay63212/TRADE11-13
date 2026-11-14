@@ -16,13 +16,14 @@ class Ntfy:
         self._last: dict[str, float] = {}
 
     def __call__(self, title: str, message: str, priority: str = "default",
-                 tags: str = "", throttle_key: str | None = None, throttle_s: int = 600):
+                 tags: str = "", throttle_key: str | None = None, throttle_s: int = 600) -> bool:
+        """Returns True only if ntfy accepted the message."""
         if not self.topic:
-            return
+            return False
         if throttle_key:                                   # avoid spamming repeated errors
             now = time.time()
             if now - self._last.get(throttle_key, 0) < throttle_s:
-                return
+                return False
             self._last[throttle_key] = now
         req = urllib.request.Request(
             f"{self.server}/{self.topic}", data=message.encode("utf-8"), method="POST",
@@ -30,5 +31,7 @@ class Ntfy:
                      "Priority": priority, "Tags": tags})
         try:
             urllib.request.urlopen(req, timeout=5).read()
+            return True
         except Exception as e:                             # never let alerts crash trading
             self.log(f"(ntfy send failed: {e})")
+            return False
