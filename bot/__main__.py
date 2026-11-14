@@ -17,6 +17,7 @@ from datetime import datetime
 
 from .broker import AlpacaBroker, DryRunBroker
 from .engine import Config, Engine
+from .notify import Ntfy
 
 
 def make_logger(log_dir):
@@ -34,7 +35,8 @@ def make_logger(log_dir):
 def main():
     ap = argparse.ArgumentParser(prog="python -m bot")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("check", help="test Alpaca connection, no orders")
+    c = sub.add_parser("check", help="test Alpaca connection + ntfy, no orders")
+    c.add_argument("--live", action="store_true")
     r = sub.add_parser("run", help="run the trading loop")
     r.add_argument("--symbols", nargs="+", default=["QQQ"])
     r.add_argument("--amd-only", action="store_true", help="AMD without killzones/IFVG")
@@ -45,6 +47,8 @@ def main():
     r.add_argument("--max-position", type=float, default=20000.0)
     r.add_argument("--dry-run", action="store_true", help="no orders, log only")
     r.add_argument("--live", action="store_true", help="REAL MONEY account")
+    ap.add_argument("--ntfy-topic", default=os.environ.get("NTFY_TOPIC"),
+                    help="ntfy topic for phone alerts (or set NTFY_TOPIC)")
     a = ap.parse_args()
 
     key, secret = os.environ.get("APCA_API_KEY_ID"), os.environ.get("APCA_API_SECRET_KEY")
@@ -64,6 +68,12 @@ def main():
         print(f"Connected ({'PAPER' if paper else 'LIVE'}). Equity ${float(acct.equity):,.2f}, "
               f"buying power ${float(acct.buying_power):,.2f}")
         print(f"Market open now: {clock.is_open}. Next open {clock.next_open}")
+        if a.ntfy_topic:
+            Ntfy(a.ntfy_topic)("Bot test", "ntfy is working - you will get trade alerts here.",
+                               tags="white_check_mark")
+            print(f"Sent a test notification to ntfy topic '{a.ntfy_topic}'. Check your phone.")
+        else:
+            print("No ntfy topic set (NTFY_TOPIC) - phone alerts are off.")
         for s in ("QQQ", "SPY"):
             try:
                 print(s, "latest 1m bar:", alpaca.latest_minute_bar(s))
@@ -78,10 +88,17 @@ def main():
     log = make_logger(cfg.log_dir)
     log(f"Mode: {'DRY-RUN (no orders)' if a.dry_run else ('PAPER' if paper else 'LIVE')}")
     try:
-        Engine(broker, cfg, log).run()
+        Engine(broker, cfg, log, notify=Ntfy(a.ntfy_topic, log=log)).run()
     except KeyboardInterrupt:
         log("Stopped by user (Ctrl+C). Open positions are NOT closed automatically - "
             "check your Alpaca dashboard, or create a STOP file next time to flatten on exit.")
+        Ntfy(a.ntfy_topic)("Bot stopped (Ctrl+C)", "Open positions were NOT closed - check Alpaca.",
+                           priority="high", tags="warning")
+    except Exception as e:
+        log(f"CRASH: {e!r}")
+        Ntfy(a.ntfy_topic)("BOT CRASHED", f"{e!r}"[:300] + "\nOpen positions have NO stop - check Alpaca.",
+                           priority="urgent", tags="rotating_light")
+        raise
 
 
 if __name__ == "__main__":

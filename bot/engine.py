@@ -50,8 +50,9 @@ class Position:
 
 
 class Engine:
-    def __init__(self, broker: Broker, cfg: Config, log=print):
+    def __init__(self, broker: Broker, cfg: Config, log=print, notify=None):
         self.b, self.cfg, self.log = broker, cfg, log
+        self.notify = notify or (lambda *a, **k: None)
         self.strats = {s: AmdStrategy(cfg.use_ifvg, cfg.asia_hours) for s in cfg.symbols}
         self.minutes: dict[str, dict] = {s: {} for s in cfg.symbols}   # ts -> (o,h,l,c)
         self.last_5m: dict[str, pd.Timestamp] = {}
@@ -114,6 +115,7 @@ class Engine:
             return
         if self._daily_loss_hit():
             self.log(f"{sym} signal skipped: daily loss limit reached")
+            self.notify(f"{sym} skipped", "Daily loss limit reached - no more trades today", tags="no_entry")
             return
         qty = int(min(self.cfg.risk_per_trade / risk_ps, self.cfg.max_position_value / price))
         if qty < 1:
@@ -122,23 +124,34 @@ class Engine:
         fill = self.b.buy_sell(sym, qty, sig.side, price)
         if not fill.ok:
             self.log(f"{sym} entry failed: {fill.info}")
+            self.notify(f"{sym} entry failed", fill.info, tags="warning")
             return
         self.pos[sym] = Position(sym, sig.side, fill.qty, fill.price, sig.stop, target,
                                  self.now, self.last_bar_ts[sym])
         self.log(f"{sym} ENTER {'LONG' if sig.side > 0 else 'SHORT'} {fill.qty} @ {fill.price:.2f} "
                  f"stop {sig.stop:.2f} target {target:.2f} (risk ${risk_ps * fill.qty:.0f})")
+        self.notify(f"{sym} {'LONG' if sig.side > 0 else 'SHORT'} entered",
+                    f"{fill.qty} @ {fill.price:.2f}\nStop {sig.stop:.2f}  Target {target:.2f}\n"
+                    f"Risk ${risk_ps * fill.qty:.0f}", priority="high",
+                    tags="chart_with_upwards_trend" if sig.side > 0 else "chart_with_downwards_trend")
 
     def _exit(self, sym: str, price: float, reason: str):
         p = self.pos[sym]
         fill = self.b.buy_sell(sym, p.qty, -p.side, price)
         if not fill.ok:
             self.log(f"{sym} EXIT FAILED ({fill.info}) - will retry next poll. CHECK BROKER.")
+            self.notify(f"{sym} EXIT FAILED", f"{fill.info}. Bot will retry - CHECK ALPACA NOW.",
+                        priority="urgent", tags="rotating_light", throttle_key=f"exitfail{sym}",
+                        throttle_s=120)
             return
         pnl = (fill.price - p.entry) * p.side * p.qty
         r = pnl / max(abs(p.entry - p.stop) * p.qty, 1e-9)
         day = self._today()
         self.realized[day] = self.realized.get(day, 0.0) + pnl
         self.log(f"{sym} EXIT {reason} {fill.qty} @ {fill.price:.2f}  P&L ${pnl:.2f} ({r:+.2f}R)")
+        self.notify(f"{sym} closed: {reason}",
+                    f"{fill.qty} @ {fill.price:.2f}\nP&L ${pnl:.2f} ({r:+.2f}R)\n"
+                    f"Today: ${self.realized[day]:.2f}", tags="moneybag" if pnl > 0 else "x")
         self._record({"symbol": sym, "side": p.side, "qty": fill.qty, "entry_time": p.entry_time,
                       "entry": p.entry, "stop": p.stop, "target": p.target,
                       "exit_time": self.now, "exit": fill.price,
@@ -173,6 +186,8 @@ class Engine:
                 bar = self.b.latest_minute_bar(sym)
             except Exception as e:
                 self.log(f"{sym} data error: {e}")
+                self.notify(f"{sym} data error", str(e)[:200], tags="warning",
+                            throttle_key=f"data{sym}")
                 continue
             if not bar:
                 continue
@@ -188,12 +203,19 @@ class Engine:
 
     def run(self):
         self.log(f"Bot started: {self.cfg}")
+        self.notify("Bot started", f"Symbols: {', '.join(self.cfg.symbols)}", tags="robot")
         self.log("Warm-up: the strategy needs the Asian range (from "
                  f"{24 - self.cfg.asia_hours}:00 ET) before it can signal.")
         while True:
             if os.path.exists("STOP"):
                 self.log("STOP file found - flattening and exiting.")
+                self.notify("Bot stopping", "STOP file found - closing positions", tags="stop_sign")
                 self.flatten_all()
                 return
-            self.step()
+            try:
+                self.step()
+            except Exception as e:                          # keep running; alert the user
+                self.log(f"ERROR in trading loop: {e!r}")
+                self.notify("Bot error", f"{e!r}"[:300] + "\nBot is still running - check Alpaca.",
+                            priority="high", tags="warning", throttle_key="loop", throttle_s=300)
             time.sleep(self.cfg.poll_seconds)

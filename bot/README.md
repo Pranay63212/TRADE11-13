@@ -30,7 +30,17 @@ not use `--live` until the full backtest and several weeks of paper trading agre
    setx APCA_API_SECRET_KEY "your-paper-secret"
    ```
    Never paste keys into code, chat, or GitHub.
-5. Test the connection (sends no orders):
+5. Phone alerts with ntfy (optional but recommended):
+   - Install the **ntfy** app (Android / iPhone), tap **+**, subscribe to a topic
+     with a long random name, e.g. `amdbot-7f3k9q2x81` (anyone who knows the name
+     can read your alerts, so don't use something guessable).
+   - Tell the bot the same topic:
+     ```
+     setx NTFY_TOPIC "amdbot-7f3k9q2x81"
+     ```
+   - You get alerts for: bot started, trade entered, trade closed (P&L), daily
+     loss limit, errors, failed exits (urgent), crash (urgent), bot stopped.
+6. Test the connection (sends no orders; also sends a test alert to your phone):
    ```
    python -m bot check
    ```
