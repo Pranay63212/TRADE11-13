@@ -161,7 +161,8 @@ def in_killzone(ts: pd.Timestamp) -> bool:
     return (2 * 60 <= m < 5 * 60) or (8 * 60 + 30 <= m < 11 * 60)
 
 
-def amd_ifvg(symbol: str, m5: pd.DataFrame, target_mode: str = "range") -> list[Trade]:
+def amd_ifvg(symbol: str, m5: pd.DataFrame, target_mode: str = "range",
+             asia_hours: int = 5) -> list[Trade]:
     """Per NY calendar day D:
       Accumulation: Asian range = high/low of bars 19:00 (D-1) to 00:00 (D).
       Manipulation: between 00:00 and 11:00 price trades beyond one side.
@@ -180,8 +181,8 @@ def amd_ifvg(symbol: str, m5: pd.DataFrame, target_mode: str = "range") -> list[
     trades = []
     days = sorted(set(idx.normalize()))
     for d in days:
-        asia = df[(idx >= d - pd.Timedelta(hours=5)) & (idx < d)]
-        if len(asia) < 30:
+        asia = df[(idx >= d - pd.Timedelta(hours=asia_hours)) & (idx < d)]
+        if len(asia) < 6 * asia_hours:
             continue
         a_hi, a_lo = asia["High"].max(), asia["Low"].min()
         sess_mask = (idx >= d) & (idx < d + pd.Timedelta(hours=11))
@@ -230,7 +231,8 @@ def amd_ifvg(symbol: str, m5: pd.DataFrame, target_mode: str = "range") -> list[
     return trades
 
 
-def amd_only(symbol: str, m5: pd.DataFrame, target_mode: str = "range") -> list[Trade]:
+def amd_only(symbol: str, m5: pd.DataFrame, target_mode: str = "range",
+             asia_hours: int = 5) -> list[Trade]:
     """Plain AMD, no killzone filter and no IFVG:
       Accumulation: Asian range 19:00 (D-1) to 00:00 (D) NY.
       Manipulation: first sweep of the Asian high/low between 00:00 and 11:00.
@@ -243,8 +245,8 @@ def amd_only(symbol: str, m5: pd.DataFrame, target_mode: str = "range") -> list[
     H, L, C = df["High"].values, df["Low"].values, df["Close"].values
     trades = []
     for d in sorted(set(idx.normalize())):
-        asia = df[(idx >= d - pd.Timedelta(hours=5)) & (idx < d)]
-        if len(asia) < 30:
+        asia = df[(idx >= d - pd.Timedelta(hours=asia_hours)) & (idx < d)]
+        if len(asia) < 6 * asia_hours:
             continue
         a_hi, a_lo = asia["High"].max(), asia["Low"].min()
         sess_pos = np.flatnonzero((idx >= d) & (idx < d + pd.Timedelta(hours=11)))
@@ -349,6 +351,8 @@ def report(groups: dict, symbols: list[str], tag: str):
     rows, all_trades = [], []
     for name in sorted(groups):
         tr = groups[name]
+        for t in tr:                 # label each trade with its test variant
+            t.strategy = name
         all_trades.extend(tr)
         for sym in symbols + ["ALL"]:
             sub = tr if sym == "ALL" else [t for t in tr if t.symbol == sym]
@@ -381,6 +385,11 @@ def main_duka():
             groups.setdefault(f"1. CRT-4H ({tm})", []).extend(crt(sym, h1, tm))
             groups.setdefault(f"2. AMD only ({tm})", []).extend(amd_only(sym, m5, tm))
             groups.setdefault(f"3. AMD+Time+IFVG ({tm})", []).extend(amd_ifvg(sym, m5, tm))
+            # Alpaca's overnight session opens 20:00 ET -> Asian range 20:00-00:00
+            groups.setdefault(f"2b. AMD only, Asia from 8PM ({tm})", []).extend(
+                amd_only(sym, m5, tm, asia_hours=4))
+            groups.setdefault(f"3b. AMD+Time+IFVG, Asia from 8PM ({tm})", []).extend(
+                amd_ifvg(sym, m5, tm, asia_hours=4))
     report(groups, DUKA_SYMBOLS, "_dukascopy")
 
 

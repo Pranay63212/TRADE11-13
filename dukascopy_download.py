@@ -64,7 +64,13 @@ def main(start: str, end: str, symbols: str = ",".join(SYMBOLS)):
             d += timedelta(days=1)
             if d.day == 1:
                 print(sym, d, flush=True)
-        # assemble
+        assemble(sym, d0, d1)
+
+
+def assemble(sym: str, d0: date, d1: date):
+    """Combine cached day files (whatever has been downloaded so far) into one CSV."""
+    cache = os.path.join(ROOT, "duka", sym)
+    if True:
         frames = []
         for f in sorted(os.listdir(cache)):
             day = date.fromisoformat(f[:10])
@@ -87,4 +93,8 @@ def main(start: str, end: str, symbols: str = ",".join(SYMBOLS)):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:4])
+    if sys.argv[1] == "--assemble":          # build CSVs from what is cached so far
+        for s in SYMBOLS:
+            assemble(s, date.fromisoformat(sys.argv[2]), date.fromisoformat(sys.argv[3]))
+    else:
+        main(*sys.argv[1:4])
