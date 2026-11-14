@@ -230,6 +230,59 @@ def amd_ifvg(symbol: str, m5: pd.DataFrame, target_mode: str = "range") -> list[
     return trades
 
 
+def amd_only(symbol: str, m5: pd.DataFrame, target_mode: str = "range") -> list[Trade]:
+    """Plain AMD, no killzone filter and no IFVG:
+      Accumulation: Asian range 19:00 (D-1) to 00:00 (D) NY.
+      Manipulation: first sweep of the Asian high/low between 00:00 and 11:00.
+      Entry: first 5m close back INSIDE the Asian range after the sweep
+             (still before 11:00). Buy/sell next bar open.
+      Stop: manipulation extreme. Target: opposite Asian extreme (or 2R).
+      Time exit 16:00 NY. Max one trade per day."""
+    cost = COST_POINTS[symbol]
+    df, idx = m5, m5.index
+    H, L, C = df["High"].values, df["Low"].values, df["Close"].values
+    trades = []
+    for d in sorted(set(idx.normalize())):
+        asia = df[(idx >= d - pd.Timedelta(hours=5)) & (idx < d)]
+        if len(asia) < 30:
+            continue
+        a_hi, a_lo = asia["High"].max(), asia["Low"].min()
+        sess_pos = np.flatnonzero((idx >= d) & (idx < d + pd.Timedelta(hours=11)))
+        if len(sess_pos) < 10:
+            continue
+        bias, run_lo, run_hi = 0, np.inf, -np.inf
+        for i in sess_pos:
+            run_lo, run_hi = min(run_lo, L[i]), max(run_hi, H[i])
+            if bias == 0:
+                if L[i] < a_lo:
+                    bias = 1
+                elif H[i] > a_hi:
+                    bias = -1
+                continue
+            if i + 1 >= len(df):
+                break
+            side = 0
+            if bias == 1 and a_lo < C[i] < a_hi:
+                side, stop, tgt = 1, run_lo, a_hi
+            elif bias == -1 and a_lo < C[i] < a_hi:
+                side, stop, tgt = -1, run_hi, a_lo
+            if not side:
+                continue
+            entry_i = i + 1
+            if target_mode == "2R":
+                e = df["Open"].iat[entry_i]
+                tgt = e + 2 * (e - stop)
+            last_i = int(np.searchsorted(idx, d + pd.Timedelta(hours=16))) - 1
+            res = simulate(df, entry_i, side, stop, tgt, last_i, cost)
+            if res is not None:
+                entry, exit_px, reason, exit_i, r = res
+                trades.append(Trade(symbol, f"AMD-only-5m ({target_mode})",
+                                    str(idx[i]), str(idx[entry_i]), str(idx[exit_i]),
+                                    side, entry, stop, tgt, exit_px, reason, r))
+            break
+    return trades
+
+
 # ---------------------------------------------------------------- stats
 def stats(trades: list[Trade]) -> dict:
     if not trades:
@@ -278,8 +331,63 @@ def prop_mc(trades: list[Trade], risk=250.0, target=3000.0, max_dd=2500.0,
     return round(passed / n, 3)
 
 
+# ---------------------------------------------------------------- dukascopy run
+COST_POINTS.update({"USA500IDXUSD": 0.5, "USATECHIDXUSD": 1.0})
+DUKA_SYMBOLS = ["USA500IDXUSD", "USATECHIDXUSD"]
+
+
+def load_duka(sym: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+    df = pd.read_csv(os.path.join(DATA_DIR, f"{sym}_1m.csv.gz"), index_col=0)
+    df.index = pd.to_datetime(df.index, utc=True).tz_convert(NY)
+    agg = {"Open": "first", "High": "max", "Low": "min", "Close": "last"}
+    m5 = df.resample("5min", label="left", closed="left").agg(agg).dropna()
+    h1 = df.resample("1h", label="left", closed="left").agg(agg).dropna()
+    return m5, h1
+
+
+def report(groups: dict, symbols: list[str], tag: str):
+    rows, all_trades = [], []
+    for name in sorted(groups):
+        tr = groups[name]
+        all_trades.extend(tr)
+        for sym in symbols + ["ALL"]:
+            sub = tr if sym == "ALL" else [t for t in tr if t.symbol == sym]
+            row = {"test": name, "symbol": sym, **stats(sub)}
+            if sym == "ALL":
+                row["prop_pass_rate_mc"] = prop_mc(sub)
+            rows.append(row)
+    table = pd.DataFrame(rows)
+    pd.set_option("display.width", 250)
+    pd.set_option("display.max_columns", 20)
+    print(table.to_string(index=False))
+    table.to_csv(os.path.join(RESULTS_DIR, f"summary{tag}.csv"), index=False)
+    trades = pd.DataFrame([asdict(t) for t in all_trades])
+    trades.to_csv(os.path.join(RESULTS_DIR, f"trades{tag}.csv"), index=False)
+    # per-year stability (avg R per year, both symbols combined)
+    trades["year"] = trades["entry_time"].str[:4]
+    yearly = trades.pivot_table(index="strategy", columns="year", values="r",
+                                aggfunc="mean").round(3)
+    print("\nAverage R by year:\n", yearly.to_string())
+    yearly.to_csv(os.path.join(RESULTS_DIR, f"yearly{tag}.csv"))
+
+
+def main_duka():
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    groups: dict[str, list[Trade]] = {}
+    for sym in DUKA_SYMBOLS:
+        m5, h1 = load_duka(sym)
+        print(f"{sym}: {m5.index[0]} -> {m5.index[-1]}")
+        for tm in ("range", "2R"):
+            groups.setdefault(f"1. CRT-4H ({tm})", []).extend(crt(sym, h1, tm))
+            groups.setdefault(f"2. AMD only ({tm})", []).extend(amd_only(sym, m5, tm))
+            groups.setdefault(f"3. AMD+Time+IFVG ({tm})", []).extend(amd_ifvg(sym, m5, tm))
+    report(groups, DUKA_SYMBOLS, "_dukascopy")
+
+
 # ---------------------------------------------------------------- main
 def main():
+    if "--source" in sys.argv and sys.argv[sys.argv.index("--source") + 1] == "dukascopy":
+        return main_duka()
     os.makedirs(RESULTS_DIR, exist_ok=True)
     groups: dict[str, list[Trade]] = {}
     for sym in SYMBOLS:
