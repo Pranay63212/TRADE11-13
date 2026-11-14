@@ -5,7 +5,7 @@ Files: https://datafeed.dukascopy.com/datafeed/{SYM}/{YYYY}/{MM0}/{DD}/BID_candl
   (MM0 = zero-based month). Each file is LZMA-compressed, 24-byte big-endian
   records: seconds-from-day-start(UTC), open, close, low, high (int, /1000), volume (float).
 
-Usage: python3 dukascopy_download.py 2019-01-01 2026-11-13
+Usage: python3 dukascopy_download.py 2019-01-01 2026-11-13 [USA500IDXUSD,USATECHIDXUSD]
 Output: data/duka/{SYM}/{YYYY-MM-DD}.npy (cached per day), then data/{SYM}_1m.parquet-like CSV.
 """
 import lzma
@@ -29,19 +29,19 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
 def fetch_day(sym: str, d: date) -> np.ndarray:
     url = f"{BASE}/{sym}/{d.year}/{d.month - 1:02d}/{d.day:02d}/BID_candles_min_1.bi5"
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    delay = 5
-    for attempt in range(8):
+    delay = 10
+    while True:                      # keep retrying through throttling; never crash
         try:
             raw = urllib.request.urlopen(req, timeout=60).read()
             break
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 return np.empty((0, 6))
-            time.sleep(delay); delay = min(delay * 2, 120)
-        except Exception:
-            time.sleep(delay); delay = min(delay * 2, 120)
-    else:
-        raise RuntimeError(f"failed {url}")
+            print(f"  retry {d} in {delay}s (HTTP {e.code})", flush=True)
+        except Exception as e:
+            print(f"  retry {d} in {delay}s ({type(e).__name__})", flush=True)
+        time.sleep(delay)
+        delay = min(delay * 2, 600)
     if not raw:
         return np.empty((0, 6))
     buf = lzma.decompress(raw)
@@ -50,9 +50,9 @@ def fetch_day(sym: str, d: date) -> np.ndarray:
     return recs
 
 
-def main(start: str, end: str):
+def main(start: str, end: str, symbols: str = ",".join(SYMBOLS)):
     d0, d1 = date.fromisoformat(start), date.fromisoformat(end)
-    for sym in SYMBOLS:
+    for sym in symbols.split(","):
         cache = os.path.join(ROOT, "duka", sym)
         os.makedirs(cache, exist_ok=True)
         d = d0
@@ -60,7 +60,7 @@ def main(start: str, end: str):
             path = os.path.join(cache, f"{d}.npy")
             if d.weekday() != 5 and not os.path.exists(path):   # skip Saturdays
                 np.save(path, fetch_day(sym, d))
-                time.sleep(0.4)
+                time.sleep(2.0)                                   # be gentle: avoid throttling
             d += timedelta(days=1)
             if d.day == 1:
                 print(sym, d, flush=True)
@@ -87,4 +87,4 @@ def main(start: str, end: str):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:3])
+    main(*sys.argv[1:4])
