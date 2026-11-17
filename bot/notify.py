@@ -6,8 +6,15 @@ random topic name and treat it like a password.
 """
 from __future__ import annotations
 
+import ssl
 import time
 import urllib.request
+
+try:                                    # use the same up-to-date CA bundle as requests/alpaca-py
+    import certifi
+    _SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+except Exception:                       # certifi missing: fall back to the system store
+    _SSL_CTX = ssl.create_default_context()
 
 
 class Ntfy:
@@ -30,7 +37,7 @@ class Ntfy:
             headers={"Title": title.encode("ascii", "ignore").decode(),
                      "Priority": priority, "Tags": tags})
         try:
-            urllib.request.urlopen(req, timeout=5).read()
+            urllib.request.urlopen(req, timeout=5, context=_SSL_CTX).read()
             return True
         except Exception as e:                             # never let alerts crash trading
             self.log(f"(ntfy send failed: {e})")

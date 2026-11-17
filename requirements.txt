@@ -3,3 +3,4 @@ numpy
 alpaca-py
 yfinance
 pytest
+certifi
