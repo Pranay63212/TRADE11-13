@@ -19,6 +19,8 @@ from .broker import AlpacaBroker, DryRunBroker
 from .engine import Config, Engine
 from .notify import Ntfy
 
+VERSION = "2026-11-18 (ntfy curl fallback)"
+
 
 def make_logger(log_dir):
     os.makedirs(log_dir, exist_ok=True)
@@ -63,6 +65,7 @@ def main():
     alpaca = AlpacaBroker(key, secret, paper=paper)
 
     if a.cmd == "check":
+        print(f"Bot version: {VERSION}")
         acct = alpaca.trading.get_account()
         clock = alpaca.trading.get_clock()
         print(f"Connected ({'PAPER' if paper else 'LIVE'}). Equity ${float(acct.equity):,.2f}, "
@@ -90,6 +93,7 @@ def main():
                  max_position_value=a.max_position)
     broker = DryRunBroker(alpaca) if a.dry_run else alpaca
     log = make_logger(cfg.log_dir)
+    log(f"Version: {VERSION}")
     log(f"Mode: {'DRY-RUN (no orders)' if a.dry_run else ('PAPER' if paper else 'LIVE')}")
     try:
         Engine(broker, cfg, log, notify=Ntfy(a.ntfy_topic, log=log)).run()

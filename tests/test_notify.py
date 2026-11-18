@@ -31,3 +31,22 @@ def test_ntfy_post_and_throttle():
 def test_ntfy_disabled_and_failure_safe():
     Ntfy(None)("t", "m")                                   # no topic: silently off
     Ntfy("t", server="http://127.0.0.1:9", log=lambda *_: None)("t", "m")   # unreachable: no crash
+
+
+def test_curl_fallback_when_python_https_fails(monkeypatch):
+    """If urllib fails (e.g. certificate error), alerts go out via curl instead."""
+    import shutil
+    import pytest
+    if not shutil.which("curl"):
+        pytest.skip("curl not installed")
+    import bot.notify as nm
+
+    def boom(*a, **k):
+        raise OSError("certificate verify failed: certificate has expired")
+    monkeypatch.setattr(nm.urllib.request, "urlopen", boom)
+    got.clear()
+    srv = HTTPServer(("127.0.0.1", 0), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    ok = Ntfy("t2", server=f"http://127.0.0.1:{srv.server_port}")("Bot test", "line1\nline2")
+    srv.shutdown()
+    assert ok and got[0] == ("/t2", "Bot test", "default", "line1\nline2")

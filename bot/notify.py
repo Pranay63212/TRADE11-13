@@ -6,7 +6,9 @@ random topic name and treat it like a password.
 """
 from __future__ import annotations
 
+import shutil
 import ssl
+import subprocess
 import time
 import urllib.request
 
@@ -40,5 +42,23 @@ class Ntfy:
             urllib.request.urlopen(req, timeout=5, context=_SSL_CTX).read()
             return True
         except Exception as e:                             # never let alerts crash trading
+            if self._send_with_curl(title, message, priority, tags):
+                return True                                # e.g. Windows certificate issues
             self.log(f"(ntfy send failed: {e})")
+            return False
+
+    def _send_with_curl(self, title, message, priority, tags) -> bool:
+        """Fallback: Windows' built-in curl.exe uses the Windows certificate store."""
+        curl = shutil.which("curl")
+        if not curl:
+            return False
+        try:
+            r = subprocess.run(
+                [curl, "-s", "-f", "-m", "10",
+                 "-H", f"Title: {title.encode('ascii', 'ignore').decode()}",
+                 "-H", f"Priority: {priority}", "-H", f"Tags: {tags}",
+                 "--data-binary", message, f"{self.server}/{self.topic}"],
+                capture_output=True, timeout=15)
+            return r.returncode == 0
+        except Exception:
             return False
