@@ -91,7 +91,7 @@ class AmdStrategy:
     def on_bar(self, b: Bar) -> Signal | None:
         midnight = b.ts.normalize()
         # Asian-range bar for the NEXT calendar day?
-        nxt = midnight + pd.Timedelta(days=1)
+        nxt = midnight + pd.DateOffset(days=1)        # calendar day (DST-safe; Timedelta(days=1) is 24h)
         if b.ts >= nxt - pd.Timedelta(hours=self.asia_hours):
             self._day(nxt).asia.append((b.high, b.low))
             return None

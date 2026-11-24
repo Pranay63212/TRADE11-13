@@ -19,7 +19,7 @@ from .broker import AlpacaBroker, DryRunBroker
 from .engine import Config, Engine
 from .notify import Ntfy
 
-VERSION = "2026-11-24c (0.5R/1R targets)"
+VERSION = "2026-11-24d (0.5R/1R targets, DST fix)"
 
 
 def make_logger(log_dir):
