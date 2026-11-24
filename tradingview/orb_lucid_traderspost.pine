@@ -1,0 +1,35 @@
+//@version=5
+// ORB (9:30-9:35 ET candle), hold to close - same rules as orb.py / lucid_sim.py.
+// Sends TradersPost-format JSON alerts -> TradersPost -> Tradovate -> Lucid account.
+// UNTESTED on TradingView: check it in the Strategy Tester and on a paper/eval account first.
+// Use on MNQ1! with a 5-minute chart.
+strategy("ORB 9:30 hold-to-close (TradersPost)", overlay=true, pyramiding=0,
+     default_qty_type=strategy.fixed, default_qty_value=1, calc_on_every_tick=false)
+
+riskUsd   = input.float(150, "Max $ risk per trade")
+maxQty    = input.int(20, "Max contracts (Lucid 25K: 20 micros)")
+costPts   = input.float(1.0, "Cost per contract (points)")
+exitHour  = input.int(15, "Exit hour ET")
+exitMin   = input.int(55, "Exit minute ET")
+
+tz = "America/New_York"
+h  = hour(time, tz)
+m  = minute(time, tz)
+isOpenBar = h == 9 and m == 30                       // the 9:30-9:35 candle (bar start time)
+exitNow   = (h > exitHour or (h == exitHour and m >= exitMin)) and h < 17
+
+if isOpenBar and strategy.position_size == 0 and close != open
+    isLong = close > open
+    stopPx = isLong ? low : high
+    dist   = math.abs(close - stopPx)
+    qty    = math.min(maxQty, math.floor(riskUsd / ((dist + costPts) * syminfo.pointvalue)))
+    if qty >= 1
+        side = isLong ? "buy" : "sell"
+        msg  = '{"ticker":"' + syminfo.ticker + '","action":"' + side + '","quantity":' + str.tostring(qty) +
+               ',"stopLoss":{"type":"stop","stopPrice":' + str.tostring(stopPx, format.mintick) + '}}'
+        strategy.entry(isLong ? "L" : "S", isLong ? strategy.long : strategy.short, qty, alert_message=msg)
+        exitMsg = '{"ticker":"' + syminfo.ticker + '","action":"exit"}'
+        strategy.exit(isLong ? "L-stop" : "S-stop", isLong ? "L" : "S", stop=stopPx, alert_message=exitMsg)
+
+if exitNow and strategy.position_size != 0
+    strategy.close_all(comment="EOD", alert_message='{"ticker":"' + syminfo.ticker + '","action":"exit"}')
