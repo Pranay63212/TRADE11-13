@@ -36,3 +36,17 @@ Stop = manipulation extreme. Target = the opposite side of the Asian range (or 2
 - CRT has a large sample (2,000+ trades) and is slightly negative after costs. Under these rules, its eval pass rate is below the zero-edge baseline.
 - AMD+Time+IFVG with the Asian-range target was slightly positive. But it has only 96 trades over 60 days, and its CI runs from -0.29R to +0.43R, which is too wide to conclude anything. The 2R version of the same entries was negative.
 - These results apply only to these exact rules. Other definitions of CRT or IFVG could give different results.
+
+## Bot strategy (AMD + Time + IFVG, Asia 20:00-00:00 ET, range target), run 2026-11-24
+| Data | Symbol | Period | Trades | Win % | Avg R | 95% CI | Total R | Max DD (R) | Worst losing streak |
+|---|---|---|---|---|---|---|---|---|---|
+| Dukascopy CFD | Nasdaq 100 | 2025-01-01 to 2025-05-01 | 83 | 39.8% | +0.17 | [-0.20, 0.53] | +13.8 | 7.6 | 5 |
+| Dukascopy CFD | S&P 500 | 2025-01-01 to 2025-03-02 | 41 | 31.7% | -0.26 | [-0.68, 0.16] | -10.8 | 11.5 | 5 |
+| Yahoo futures | NQ | 2026-09-16 to 2026-11-24 | 49 | 32.7% | +0.06 | [-0.44, 0.57] | +3.0 | 9.3 | 10 |
+| Yahoo futures | ES | 2026-09-16 to 2026-11-24 | 49 | 34.7% | +0.02 | [-0.44, 0.49] | +1.0 | 10.5 | 10 |
+| **All** | | | **222** | **35.6%** | **+0.03** | **[-0.19, 0.25]** | **+7.1** | **18.1** | **11** |
+
+Avg win +1.97R, avg loss -1.04R. Prop-eval bootstrap pass rate 38% (zero-edge baseline ~31%).
+Sizing illustration on the combined trade list: 1% risk/trade $25,000 -> $26,044 (max DD 18%);
+10% risk/trade $25,000 -> $3,543 (max DD 96%).
+Conclusion: slightly positive but NOT statistically distinguishable from zero.
