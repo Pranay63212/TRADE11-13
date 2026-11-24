@@ -28,7 +28,8 @@ if isOpenBar and strategy.position_size == 0 and close != open
         tgtPx = isLong ? close + targetR * dist : close - targetR * dist
         side = isLong ? "buy" : "sell"
         msg  = '{"ticker":"' + syminfo.ticker + '","action":"' + side + '","quantity":' + str.tostring(qty) +
-               ',"stopLoss":{"type":"stop","stopPrice":' + str.tostring(stopPx, format.mintick) + '}}'
+               ',"stopLoss":{"type":"stop","stopPrice":' + str.tostring(stopPx, format.mintick) + '}' +
+               (targetR > 0 ? ',"takeProfit":{"limitPrice":' + str.tostring(tgtPx, format.mintick) + '}' : '') + '}'
         strategy.entry(isLong ? "L" : "S", isLong ? strategy.long : strategy.short, qty, alert_message=msg)
         exitMsg = '{"ticker":"' + syminfo.ticker + '","action":"exit"}'
         strategy.exit(isLong ? "L-stop" : "S-stop", isLong ? "L" : "S", stop=stopPx,
