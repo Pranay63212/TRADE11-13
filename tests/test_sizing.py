@@ -54,3 +54,13 @@ def test_rejected_order_is_reported_not_crashed():
     e._enter("QQQ", Signal(e.last_bar_ts["QQQ"], 1, 658.0, 670.0,
                            e.last_bar_ts["QQQ"].normalize()), 660.0)
     assert "QQQ" not in e.pos
+
+
+def test_half_r_target():
+    b = B()
+    e = Engine(b, Config(symbols=["QQQ"], log_dir=tempfile.mkdtemp(), target_mode="0.5R"),
+               log=lambda *_: None)
+    e.last_bar_ts["QQQ"] = pd.Timestamp("2026-11-24 03:00", tz="America/New_York")
+    e._enter("QQQ", Signal(e.last_bar_ts["QQQ"], 1, 658.0, 670.0,
+                           e.last_bar_ts["QQQ"].normalize()), 660.0)
+    assert e.pos["QQQ"].target == 661.0                    # entry + 0.5 * $2 risk

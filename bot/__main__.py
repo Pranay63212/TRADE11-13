@@ -19,7 +19,7 @@ from .broker import AlpacaBroker, DryRunBroker
 from .engine import Config, Engine
 from .notify import Ntfy
 
-VERSION = "2026-11-24b (buying-power cap)"
+VERSION = "2026-11-24c (0.5R/1R targets)"
 
 
 def make_logger(log_dir):
@@ -43,7 +43,8 @@ def main():
     r.add_argument("--symbols", nargs="+", default=["QQQ"])
     r.add_argument("--amd-only", action="store_true", help="AMD without killzones/IFVG")
     r.add_argument("--asia-hours", type=int, default=4, help="4 = 20:00-00:00 ET")
-    r.add_argument("--target", choices=["range", "2R"], default="range")
+    r.add_argument("--target", choices=["range", "2R", "1R", "0.5R"], default="range",
+                   help="0.5R = higher win rate, smaller wins")
     r.add_argument("--risk", type=float, default=50.0, help="$ risk per trade")
     r.add_argument("--max-daily-loss", type=float, default=150.0)
     r.add_argument("--max-position", type=float, default=20000.0)

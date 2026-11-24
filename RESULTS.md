@@ -71,3 +71,22 @@ Script: `variants.py`.
 | AMD only | 220 | 25% | -0.12 | [-0.43, +0.20] | -25.6 | 25% |
 | CRT 4H, range target | 387 | 47% | -0.12 | [-0.23, -0.02] | -47.5 | 5% |
 | CRT 4H, 2R target | 375 | 39% | -0.06 | [-0.18, +0.06] | -23.3 | 17% |
+
+## Pre-registered refinements for higher win rate (research.py, 2026-11-24)
+Both markets combined; in-sample 2025-01-01..03-02 (Dukascopy Nasdaq+S&P), out-of-sample 2026-09-16..11-24 (Yahoo NQ+ES).
+
+| Strategy / variant | 2025: win %, avg R, trades/wk | 2026: win %, avg R, trades/wk |
+|---|---|---|
+| AMD+IFVG base (range target) | 35%, -0.08, 9.6 | 34%, +0.04, 9.9 |
+| AMD+IFVG target 50% of Asian range | 50%, +0.01, 8.4 | 46%, +0.01, 9.5 |
+| AMD+IFVG target 1R | 51%, -0.04, 9.6 | 48%, -0.07, 9.9 |
+| **AMD+IFVG target 0.5R** | **70%, -0.03, 9.6** | **74%, +0.08, 9.9** |
+| AMD+IFVG + SMT | 4 trades | 33%, -0.08, 2.1 |
+| AMD+IFVG + displacement | 29%, -0.38, 4.1 | 38%, +0.01, 4.0 |
+| CRT base | 41%, -0.30, 17.4 | 49%, -0.08, 19.1 |
+| CRT target 50% | 48%, -0.26, 13.5 | 53%, -0.15, 13.2 (CI below 0 in both) |
+| CRT 1AM/5AM | 49%, +0.36, 4.3 | 44%, -0.07, 4.4 (did not hold up) |
+| CRT 1AM/5AM + 50% target | 61%, +0.09, 3.6 | 50%, -0.19, 3.0 |
+| CRT + SMT | 41%, -0.08, 2.6 | 45%, -0.02, 4.5 |
+
+Only the 0.5R target reaches 60-80% win rate with 5+ trades/week, and its average R is ~0 (not proven positive).

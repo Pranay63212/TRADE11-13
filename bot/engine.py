@@ -108,8 +108,8 @@ class Engine:
     def _enter(self, sym: str, sig: Signal, price: float):
         strat = self.strats[sym]
         target = sig.target
-        if self.cfg.target_mode == "2R":
-            target = price + 2 * (price - sig.stop)
+        if self.cfg.target_mode.endswith("R"):          # "2R", "1R", "0.5R" ...
+            target = price + float(self.cfg.target_mode[:-1]) * (price - sig.stop)
         risk_ps = (price - sig.stop) * sig.side
         if risk_ps <= 0 or (target - price) * sig.side <= 0:
             self.log(f"{sym} signal rejected: price {price} already past stop/target")
