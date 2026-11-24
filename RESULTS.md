@@ -50,3 +50,24 @@ Avg win +1.97R, avg loss -1.04R. Prop-eval bootstrap pass rate 38% (zero-edge ba
 Sizing illustration on the combined trade list: 1% risk/trade $25,000 -> $26,044 (max DD 18%);
 10% risk/trade $25,000 -> $3,543 (max DD 96%).
 Conclusion: slightly positive but NOT statistically distinguishable from zero.
+
+## Improvement ideas + strategy comparison (2026-11-24)
+In-sample = Dukascopy CFDs Jan-May 2025 (Nasdaq, S&P). Out-of-sample = Yahoo NQ/ES futures Sep 16-Nov 24 2026.
+Script: `variants.py`.
+
+| Variant of the bot strategy | 2025 avg R (n) | 2026 avg R (n) | Verdict |
+|---|---|---|---|
+| Current rules | +0.02 (124) | +0.04 (98) | baseline |
+| Breakeven stop at +1R | +0.02 | +0.03 | no help |
+| Skip reward:risk < 1.5 | +0.05 (86) | -0.03 (75) | helped in-sample only -> overfit |
+| Only with 5-day trend | -0.09 (60) | -0.37 (37) | worse |
+| NY window only | -0.10 (11) | +0.02 (19) | too few trades |
+| London window only | +0.04 (113) | +0.04 (79) | same as baseline (most trades are London) |
+| Nasdaq only | +0.17 (83) | +0.06 (49) | best in both, but CIs include 0 |
+
+| Strategy (all data) | Trades | Win % | Avg R | 95% CI | Total R | Prop pass |
+|---|---|---|---|---|---|---|
+| AMD + Time + IFVG (bot) | 222 | 36% | +0.03 | [-0.19, +0.25] | +6.9 | 38% |
+| AMD only | 220 | 25% | -0.12 | [-0.43, +0.20] | -25.6 | 25% |
+| CRT 4H, range target | 387 | 47% | -0.12 | [-0.23, -0.02] | -47.5 | 5% |
+| CRT 4H, 2R target | 375 | 39% | -0.06 | [-0.18, +0.06] | -23.3 | 17% |
