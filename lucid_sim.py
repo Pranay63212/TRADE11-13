@@ -5,7 +5,8 @@ Lucid 25K Pro Eval simulator (rules from the user's screenshot, 2026-11-24):
 Model assumptions (NOT confirmed with Lucid):
   * floor = highest end-of-day balance - $1,000; breached if live equity (closed balance
     minus the trade's worst open loss) touches the floor intraday.
-  * no lock of the floor, no consistency rule, no minimum days.
+  * no lock of the floor, no minimum days. 40% consistency (user, 2026-11-24): best day
+    <= 40% of total profit before passing; assumed to delay passing, not fail.
   * costs: 1 NQ point per contract round trip (as in research.py).
 Bootstrap: resample whole trading days (including no-trade days) with replacement.
 Run: python3 lucid_sim.py
@@ -72,20 +73,24 @@ def day_pnl(trades, days, risk_usd, zero_edge=False):
         res.append((n * PV * (pts - COST), n * PV * (mae + COST)))
     return np.array(res)
 
-def eval_mc(daily, n=20000, max_days=120, seed=7):
+def eval_mc(daily, n=20000, max_days=120, seed=7, consistency=None):
+    """consistency=0.4: may only pass once best single day <= 40% of total profit
+    (assumed: you keep trading until it holds; it does not fail the account)."""
     rng = np.random.default_rng(seed); passed = 0; days_to = []
     for _ in range(n):
-        bal = peak = 0.0
+        bal = peak = best = 0.0
         for k, (p, worst) in enumerate(daily[rng.integers(0, len(daily), max_days)], 1):
             if bal - min(worst, DLL) <= peak - START_DD: break        # intraday breach
-            bal += max(p, -DLL); peak = max(peak, bal)
-            if bal >= TARGET: passed += 1; days_to.append(k); break
+            p = max(p, -DLL); bal += p; peak = max(peak, bal); best = max(best, p)
+            if bal >= TARGET and (consistency is None or best <= consistency * bal):
+                passed += 1; days_to.append(k); break
     return passed / n, (int(np.median(days_to)) if days_to else None)
 
 if __name__ == "__main__":
     ins, oos = load_sets()
     sets = {"2025 in-sample": dict(ins)["USATECHIDXUSD"], "2026 out-of-sample": dict(oos)["NQ=F"]}
     strategies = {"ORB hold-to-close": lambda m, s: orb_trades(m, 10),
+                  "ORB 3R": lambda m, s: orb_trades(m, 3),
                   "ORB 2R": lambda m, s: orb_trades(m, 2),
                   "AMD+IFVG range (bot)": lambda m, s: amd_trades(m, s, "range"),
                   "AMD+IFVG 0.5R": lambda m, s: amd_trades(m, s, "0.5R")}
@@ -98,12 +103,13 @@ if __name__ == "__main__":
                                  (m5.index < d + pd.Timedelta(hours=9, minutes=35))].empty})
         for name, fn in strategies.items():
             tr = fn(m5, sym)
-            for risk in (100, 150, 200, 300, 400):
-                pr, med = eval_mc(day_pnl(tr, days, risk))
-                base, _ = eval_mc(day_pnl(tr, days, risk, zero_edge=True))
+            for risk in (100, 150, 200, 250, 300):
+                dp, dz = day_pnl(tr, days, risk), day_pnl(tr, days, risk, zero_edge=True)
+                pr, med = eval_mc(dp); pc, medc = eval_mc(dp, consistency=0.4)
+                base, _ = eval_mc(dz, consistency=0.4)
                 rows.append(dict(period=period, strategy=name, trades=len(tr), days=len(days),
-                                 risk=risk, pass_rate=round(pr, 3), no_edge_baseline=round(base, 3),
-                                 median_days_to_pass=med))
+                                 risk=risk, pass_no_rule=round(pr, 3), pass_40pct=round(pc, 3),
+                                 no_edge_40pct=round(base, 3), median_days_40pct=medc))
             print(period, name, "done", flush=True)
     df = pd.DataFrame(rows); pd.set_option("display.width", 250)
     print(df.to_string(index=False)); df.to_csv("results/lucid_25k_sim.csv", index=False)

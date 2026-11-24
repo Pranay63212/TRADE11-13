@@ -1,41 +1,51 @@
-period,strategy,trades,days,risk,pass_rate,no_edge_baseline,median_days_to_pass
-2025 in-sample,ORB hold-to-close,84,84,100,0.484,0.295,36.0
-2025 in-sample,ORB hold-to-close,84,84,150,0.459,0.295,12.0
-2025 in-sample,ORB hold-to-close,84,84,200,0.441,0.317,6.0
-2025 in-sample,ORB hold-to-close,84,84,300,0.365,0.267,3.0
-2025 in-sample,ORB hold-to-close,84,84,400,0.338,0.254,2.0
-2025 in-sample,ORB 2R,84,84,100,0.066,0.053,81.0
-2025 in-sample,ORB 2R,84,84,150,0.476,0.433,34.0
-2025 in-sample,ORB 2R,84,84,200,0.3,0.271,20.0
-2025 in-sample,ORB 2R,84,84,300,0.317,0.298,8.0
-2025 in-sample,ORB 2R,84,84,400,0.297,0.282,4.0
-2025 in-sample,AMD+IFVG range (bot),66,84,100,0.642,0.409,61.0
-2025 in-sample,AMD+IFVG range (bot),66,84,150,0.543,0.345,33.0
-2025 in-sample,AMD+IFVG range (bot),66,84,200,0.462,0.317,16.0
-2025 in-sample,AMD+IFVG range (bot),66,84,300,0.396,0.303,7.0
-2025 in-sample,AMD+IFVG range (bot),66,84,400,0.379,0.295,4.0
-2025 in-sample,AMD+IFVG 0.5R,66,84,100,0.066,0.002,107.0
-2025 in-sample,AMD+IFVG 0.5R,66,84,150,0.556,0.149,85.0
-2025 in-sample,AMD+IFVG 0.5R,66,84,200,0.698,0.273,66.0
-2025 in-sample,AMD+IFVG 0.5R,66,84,300,0.616,0.316,36.0
-2025 in-sample,AMD+IFVG 0.5R,66,84,400,0.516,0.293,20.0
-2026 out-of-sample,ORB hold-to-close,49,50,100,0.618,0.448,58.0
-2026 out-of-sample,ORB hold-to-close,49,50,150,0.498,0.322,22.0
-2026 out-of-sample,ORB hold-to-close,49,50,200,0.519,0.321,11.0
-2026 out-of-sample,ORB hold-to-close,49,50,300,0.412,0.255,6.0
-2026 out-of-sample,ORB hold-to-close,49,50,400,0.364,0.249,3.0
-2026 out-of-sample,ORB 2R,49,50,100,0.503,0.245,87.0
-2026 out-of-sample,ORB 2R,49,50,150,0.582,0.274,60.0
-2026 out-of-sample,ORB 2R,49,50,200,0.498,0.221,26.0
-2026 out-of-sample,ORB 2R,49,50,300,0.565,0.346,10.0
-2026 out-of-sample,ORB 2R,49,50,400,0.451,0.29,5.0
-2026 out-of-sample,AMD+IFVG range (bot),39,50,100,0.709,0.612,61.0
-2026 out-of-sample,AMD+IFVG range (bot),39,50,150,0.428,0.274,40.0
-2026 out-of-sample,AMD+IFVG range (bot),39,50,200,0.515,0.39,15.0
-2026 out-of-sample,AMD+IFVG range (bot),39,50,300,0.441,0.352,7.0
-2026 out-of-sample,AMD+IFVG range (bot),39,50,400,0.408,0.339,4.0
-2026 out-of-sample,AMD+IFVG 0.5R,39,50,100,0.0,0.0,
-2026 out-of-sample,AMD+IFVG 0.5R,39,50,150,0.076,0.0,98.0
-2026 out-of-sample,AMD+IFVG 0.5R,39,50,200,0.873,0.19,60.0
-2026 out-of-sample,AMD+IFVG 0.5R,39,50,300,0.713,0.192,41.0
-2026 out-of-sample,AMD+IFVG 0.5R,39,50,400,0.772,0.393,20.0
+period,strategy,trades,days,risk,pass_no_rule,pass_40pct,no_edge_40pct,median_days_40pct
+2025 in-sample,ORB hold-to-close,84,84,100,0.484,0.311,0.159,54.0
+2025 in-sample,ORB hold-to-close,84,84,150,0.459,0.203,0.082,27.0
+2025 in-sample,ORB hold-to-close,84,84,200,0.441,0.129,0.056,17.0
+2025 in-sample,ORB hold-to-close,84,84,250,0.434,0.095,0.043,14.0
+2025 in-sample,ORB hold-to-close,84,84,300,0.365,0.049,0.022,10.0
+2025 in-sample,ORB 3R,84,84,100,0.226,0.226,0.119,71.0
+2025 in-sample,ORB 3R,84,84,150,0.573,0.573,0.417,23.0
+2025 in-sample,ORB 3R,84,84,200,0.419,0.397,0.291,14.0
+2025 in-sample,ORB 3R,84,84,250,0.444,0.352,0.269,11.0
+2025 in-sample,ORB 3R,84,84,300,0.383,0.234,0.175,9.0
+2025 in-sample,ORB 2R,84,84,100,0.066,0.066,0.053,81.0
+2025 in-sample,ORB 2R,84,84,150,0.476,0.476,0.433,34.0
+2025 in-sample,ORB 2R,84,84,200,0.3,0.3,0.271,20.0
+2025 in-sample,ORB 2R,84,84,250,0.381,0.381,0.356,12.0
+2025 in-sample,ORB 2R,84,84,300,0.317,0.291,0.274,8.0
+2025 in-sample,AMD+IFVG range (bot),66,84,100,0.642,0.642,0.409,61.0
+2025 in-sample,AMD+IFVG range (bot),66,84,150,0.543,0.492,0.3,38.0
+2025 in-sample,AMD+IFVG range (bot),66,84,200,0.462,0.335,0.207,23.0
+2025 in-sample,AMD+IFVG range (bot),66,84,250,0.396,0.218,0.131,17.0
+2025 in-sample,AMD+IFVG range (bot),66,84,300,0.396,0.173,0.105,14.0
+2025 in-sample,AMD+IFVG 0.5R,66,84,100,0.066,0.066,0.002,107.0
+2025 in-sample,AMD+IFVG 0.5R,66,84,150,0.556,0.556,0.149,85.0
+2025 in-sample,AMD+IFVG 0.5R,66,84,200,0.698,0.698,0.273,66.0
+2025 in-sample,AMD+IFVG 0.5R,66,84,250,0.604,0.604,0.251,49.0
+2025 in-sample,AMD+IFVG 0.5R,66,84,300,0.616,0.616,0.316,36.0
+2026 out-of-sample,ORB hold-to-close,49,50,100,0.618,0.447,0.305,71.0
+2026 out-of-sample,ORB hold-to-close,49,50,150,0.498,0.172,0.068,59.0
+2026 out-of-sample,ORB hold-to-close,49,50,200,0.519,0.231,0.082,27.0
+2026 out-of-sample,ORB hold-to-close,49,50,250,0.485,0.166,0.048,22.0
+2026 out-of-sample,ORB hold-to-close,49,50,300,0.412,0.094,0.029,16.0
+2026 out-of-sample,ORB 3R,49,50,100,0.751,0.751,0.532,70.0
+2026 out-of-sample,ORB 3R,49,50,150,0.718,0.718,0.431,44.0
+2026 out-of-sample,ORB 3R,49,50,200,0.638,0.615,0.373,18.0
+2026 out-of-sample,ORB 3R,49,50,250,0.611,0.556,0.331,14.0
+2026 out-of-sample,ORB 3R,49,50,300,0.504,0.352,0.19,12.0
+2026 out-of-sample,ORB 2R,49,50,100,0.503,0.503,0.245,87.0
+2026 out-of-sample,ORB 2R,49,50,150,0.582,0.582,0.274,60.0
+2026 out-of-sample,ORB 2R,49,50,200,0.498,0.498,0.221,26.0
+2026 out-of-sample,ORB 2R,49,50,250,0.63,0.63,0.357,15.0
+2026 out-of-sample,ORB 2R,49,50,300,0.565,0.53,0.339,11.0
+2026 out-of-sample,AMD+IFVG range (bot),39,50,100,0.709,0.695,0.608,62.0
+2026 out-of-sample,AMD+IFVG range (bot),39,50,150,0.428,0.419,0.272,41.0
+2026 out-of-sample,AMD+IFVG range (bot),39,50,200,0.515,0.322,0.204,27.0
+2026 out-of-sample,AMD+IFVG range (bot),39,50,250,0.493,0.234,0.143,25.0
+2026 out-of-sample,AMD+IFVG range (bot),39,50,300,0.441,0.16,0.099,18.0
+2026 out-of-sample,AMD+IFVG 0.5R,39,50,100,0.0,0.0,0.0,
+2026 out-of-sample,AMD+IFVG 0.5R,39,50,150,0.076,0.076,0.0,98.0
+2026 out-of-sample,AMD+IFVG 0.5R,39,50,200,0.873,0.873,0.19,60.0
+2026 out-of-sample,AMD+IFVG 0.5R,39,50,250,0.849,0.849,0.198,55.0
+2026 out-of-sample,AMD+IFVG 0.5R,39,50,300,0.713,0.713,0.192,41.0
