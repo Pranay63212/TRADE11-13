@@ -53,6 +53,9 @@ class _Day:
     bear_fvg_top: float | None = None
     bull_fvg_bot: float | None = None
     done: bool = False
+    announced: bool = False          # status events already sent for this day
+    last_gap: float | None = None
+    closed: bool = False
 
 
 class AmdStrategy:
@@ -60,6 +63,10 @@ class AmdStrategy:
         self.use_ifvg = use_ifvg
         self.asia_hours = asia_hours
         self.days: dict[pd.Timestamp, _Day] = {}
+        # Status events for the user (do not affect trading logic):
+        #   ("asia", day, hi, lo) | ("asia_short", day, bars, needed)
+        #   ("bias", day, side, ts) | ("gap", day, side, level, ts) | ("no_trade", day)
+        self.events: list[tuple] = []
 
     def _day(self, d: pd.Timestamp) -> _Day:
         if d not in self.days:
@@ -72,6 +79,15 @@ class AmdStrategy:
         """Call when the trade for `day` was taken or rejected (no more signals)."""
         self._day(day).done = True
 
+    def _gap_event(self, st: "_Day", day, ts):
+        """Tell the user which price level would trigger an entry (IFVG mode)."""
+        if not self.use_ifvg or st.done:
+            return
+        lvl = st.bear_fvg_top if st.bias == 1 else st.bull_fvg_bot
+        if lvl is not None and lvl != st.last_gap:
+            st.last_gap = lvl
+            self.events.append(("gap", day, st.bias, lvl, ts))
+
     def on_bar(self, b: Bar) -> Signal | None:
         midnight = b.ts.normalize()
         # Asian-range bar for the NEXT calendar day?
@@ -81,8 +97,21 @@ class AmdStrategy:
             return None
         # Session bar (00:00-11:00) for today?
         if b.ts >= midnight + pd.Timedelta(hours=11):
+            st = self.days.get(midnight)
+            if st and st.announced and not st.done and not st.closed:
+                st.closed = True
+                self.events.append(("no_trade", midnight))
             return None
         st = self._day(midnight)
+        if not st.announced and not st.sess:
+            st.announced = True
+            need = 6 * self.asia_hours
+            if len(st.asia) < need:
+                self.events.append(("asia_short", midnight, len(st.asia), need))
+                st.closed = True                 # already told the user: no trade today
+            else:
+                self.events.append(("asia", midnight, max(h for h, _ in st.asia),
+                                    min(l for _, l in st.asia)))
         if st.done or len(st.asia) < 6 * self.asia_hours:
             st.sess.append(b)
             return None
@@ -101,7 +130,11 @@ class AmdStrategy:
                 st.bias = 1
             elif b.high > a_hi:
                 st.bias = -1
+            if st.bias:
+                self.events.append(("bias", midnight, st.bias, b.ts))
+                self._gap_event(st, midnight, b.ts)
             return None
+        self._gap_event(st, midnight, b.ts)
         side = 0
         if self.use_ifvg:
             if not in_killzone(b.ts):

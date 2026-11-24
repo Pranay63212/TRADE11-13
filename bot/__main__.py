@@ -19,7 +19,7 @@ from .broker import AlpacaBroker, DryRunBroker
 from .engine import Config, Engine
 from .notify import Ntfy
 
-VERSION = "2026-11-18 (ntfy curl fallback)"
+VERSION = "2026-11-24 (setup status alerts)"
 
 
 def make_logger(log_dir):
@@ -47,6 +47,10 @@ def main():
     r.add_argument("--risk", type=float, default=50.0, help="$ risk per trade")
     r.add_argument("--max-daily-loss", type=float, default=150.0)
     r.add_argument("--max-position", type=float, default=20000.0)
+    r.add_argument("--risk-pct", type=float, default=None,
+                   help="risk this %% of account equity per trade (overrides --risk)")
+    r.add_argument("--max-position-pct", type=float, default=None,
+                   help="cap position size at this %% of account equity")
     r.add_argument("--dry-run", action="store_true", help="no orders, log only")
     r.add_argument("--live", action="store_true", help="REAL MONEY account")
     ap.add_argument("--ntfy-topic", default=os.environ.get("NTFY_TOPIC"),
@@ -90,7 +94,8 @@ def main():
 
     cfg = Config(symbols=a.symbols, use_ifvg=not a.amd_only, asia_hours=a.asia_hours,
                  target_mode=a.target, risk_per_trade=a.risk, max_daily_loss=a.max_daily_loss,
-                 max_position_value=a.max_position)
+                 max_position_value=a.max_position, risk_pct=a.risk_pct,
+                 max_position_pct=a.max_position_pct)
     broker = DryRunBroker(alpaca) if a.dry_run else alpaca
     log = make_logger(cfg.log_dir)
     log(f"Version: {VERSION}")
