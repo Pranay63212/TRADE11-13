@@ -32,3 +32,25 @@ def test_risk_pct_of_equity():
 
 def test_max_position_pct_caps_size():
     assert qty(risk_per_trade=50, max_position_pct=10) == 3              # $2,500 / $660
+
+
+def test_capped_by_buying_power():
+    class Low(B):
+        def buying_power(self): return 50883.24
+    b = Low()
+    e = Engine(b, Config(symbols=["QQQ"], log_dir=tempfile.mkdtemp(), risk_pct=10,
+                         max_position_value=100000), log=lambda *_: None)
+    e.last_bar_ts["QQQ"] = pd.Timestamp("2026-11-24 03:00", tz="America/New_York")
+    sig = Signal(e.last_bar_ts["QQQ"], 1, 658.0, 670.0, e.last_bar_ts["QQQ"].normalize())
+    e._enter("QQQ", sig, 660.0)
+    assert b.orders[0] * 660.0 <= 50883.24 * 0.9          # 69 shares, ~$45.5k
+
+
+def test_rejected_order_is_reported_not_crashed():
+    class Rej(B):
+        def buy_sell(self, s, q, side, p): return Fill(False, 0, 0.0, "insufficient buying power")
+    e = Engine(Rej(), Config(symbols=["QQQ"], log_dir=tempfile.mkdtemp()), log=lambda *_: None)
+    e.last_bar_ts["QQQ"] = pd.Timestamp("2026-11-24 03:00", tz="America/New_York")
+    e._enter("QQQ", Signal(e.last_bar_ts["QQQ"], 1, 658.0, 670.0,
+                           e.last_bar_ts["QQQ"].normalize()), 660.0)
+    assert "QQQ" not in e.pos

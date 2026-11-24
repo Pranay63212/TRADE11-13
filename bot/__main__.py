@@ -19,7 +19,7 @@ from .broker import AlpacaBroker, DryRunBroker
 from .engine import Config, Engine
 from .notify import Ntfy
 
-VERSION = "2026-11-24 (setup status alerts)"
+VERSION = "2026-11-24b (buying-power cap)"
 
 
 def make_logger(log_dir):

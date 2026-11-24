@@ -42,6 +42,10 @@ class Broker:
     def position_qty(self, symbol: str) -> int:
         raise NotImplementedError
 
+    def buying_power(self) -> float:
+        """Money available for a new position right now (default: unlimited)."""
+        return float("inf")
+
     def buy_sell(self, symbol: str, qty: int, side: int, ref_price: float) -> Fill:
         raise NotImplementedError
 
@@ -78,6 +82,13 @@ class AlpacaBroker(Broker):
     def equity(self):
         return float(self.trading.get_account().equity)
 
+    def buying_power(self):
+        # Outside regular hours Alpaca only allows ~2x (Reg-T) buying power, not the 4x
+        # day-trading figure, so use the smaller of the two to avoid rejected orders.
+        a = self.trading.get_account()
+        vals = [float(v) for v in (a.buying_power, a.regt_buying_power) if v is not None]
+        return min(vals) if vals else float("inf")
+
     def position_qty(self, symbol):
         try:
             return int(float(self.trading.get_open_position(symbol).qty))
@@ -88,9 +99,19 @@ class AlpacaBroker(Broker):
         from alpaca.trading.enums import OrderSide, TimeInForce
         from alpaca.trading.requests import LimitOrderRequest
         limit = round(ref_price * (1 + side * self.slippage_pct), 2)
-        order = self.trading.submit_order(LimitOrderRequest(
-            symbol=symbol, qty=qty, side=OrderSide.BUY if side > 0 else OrderSide.SELL,
-            time_in_force=TimeInForce.DAY, limit_price=limit, extended_hours=True))
+        try:
+            order = self.trading.submit_order(LimitOrderRequest(
+                symbol=symbol, qty=qty, side=OrderSide.BUY if side > 0 else OrderSide.SELL,
+                time_in_force=TimeInForce.DAY, limit_price=limit, extended_hours=True))
+        except Exception as e:                      # e.g. insufficient buying power
+            msg = str(e)
+            if "message" in msg:
+                import json
+                try:
+                    msg = json.loads(msg).get("message", msg)
+                except Exception:
+                    pass
+            return Fill(False, 0, 0.0, f"Alpaca rejected the order: {msg}")
         deadline = time.time() + self.fill_timeout_s
         while time.time() < deadline:
             o = self.trading.get_order_by_id(order.id)

@@ -128,7 +128,16 @@ class Engine:
                 risk_dollars = eq * self.cfg.risk_pct / 100
             if self.cfg.max_position_pct:
                 max_value = eq * self.cfg.max_position_pct / 100
-        qty = int(min(risk_dollars / risk_ps, max_value / price))
+        try:
+            bp = self.b.buying_power() * 0.90       # keep 10% headroom for price/limit slippage
+        except Exception:
+            bp = float("inf")
+        wanted = min(risk_dollars / risk_ps, max_value / price)
+        qty = int(min(wanted, bp / price))
+        if qty < int(wanted):
+            self.log(f"{sym} size cut from {int(wanted)} to {qty} shares to fit buying power")
+            self.notify(f"{sym}: size reduced", f"{int(wanted)} -> {qty} shares to fit available "
+                        "buying power.", tags="warning")
         if qty < 1:
             self.log(f"{sym} signal skipped: stop too wide for risk_per_trade")
             self.notify(f"{sym}: setup skipped", "Stop too far away for your $ risk per trade.",
