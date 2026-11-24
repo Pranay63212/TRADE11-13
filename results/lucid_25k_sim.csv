@@ -1,0 +1,41 @@
+period,strategy,trades,days,risk,pass_rate,no_edge_baseline,median_days_to_pass
+2025 in-sample,ORB hold-to-close,84,84,100,0.484,0.295,36.0
+2025 in-sample,ORB hold-to-close,84,84,150,0.459,0.295,12.0
+2025 in-sample,ORB hold-to-close,84,84,200,0.441,0.317,6.0
+2025 in-sample,ORB hold-to-close,84,84,300,0.365,0.267,3.0
+2025 in-sample,ORB hold-to-close,84,84,400,0.338,0.254,2.0
+2025 in-sample,ORB 2R,84,84,100,0.066,0.053,81.0
+2025 in-sample,ORB 2R,84,84,150,0.476,0.433,34.0
+2025 in-sample,ORB 2R,84,84,200,0.3,0.271,20.0
+2025 in-sample,ORB 2R,84,84,300,0.317,0.298,8.0
+2025 in-sample,ORB 2R,84,84,400,0.297,0.282,4.0
+2025 in-sample,AMD+IFVG range (bot),66,84,100,0.642,0.409,61.0
+2025 in-sample,AMD+IFVG range (bot),66,84,150,0.543,0.345,33.0
+2025 in-sample,AMD+IFVG range (bot),66,84,200,0.462,0.317,16.0
+2025 in-sample,AMD+IFVG range (bot),66,84,300,0.396,0.303,7.0
+2025 in-sample,AMD+IFVG range (bot),66,84,400,0.379,0.295,4.0
+2025 in-sample,AMD+IFVG 0.5R,66,84,100,0.066,0.002,107.0
+2025 in-sample,AMD+IFVG 0.5R,66,84,150,0.556,0.149,85.0
+2025 in-sample,AMD+IFVG 0.5R,66,84,200,0.698,0.273,66.0
+2025 in-sample,AMD+IFVG 0.5R,66,84,300,0.616,0.316,36.0
+2025 in-sample,AMD+IFVG 0.5R,66,84,400,0.516,0.293,20.0
+2026 out-of-sample,ORB hold-to-close,49,50,100,0.618,0.448,58.0
+2026 out-of-sample,ORB hold-to-close,49,50,150,0.498,0.322,22.0
+2026 out-of-sample,ORB hold-to-close,49,50,200,0.519,0.321,11.0
+2026 out-of-sample,ORB hold-to-close,49,50,300,0.412,0.255,6.0
+2026 out-of-sample,ORB hold-to-close,49,50,400,0.364,0.249,3.0
+2026 out-of-sample,ORB 2R,49,50,100,0.503,0.245,87.0
+2026 out-of-sample,ORB 2R,49,50,150,0.582,0.274,60.0
+2026 out-of-sample,ORB 2R,49,50,200,0.498,0.221,26.0
+2026 out-of-sample,ORB 2R,49,50,300,0.565,0.346,10.0
+2026 out-of-sample,ORB 2R,49,50,400,0.451,0.29,5.0
+2026 out-of-sample,AMD+IFVG range (bot),39,50,100,0.709,0.612,61.0
+2026 out-of-sample,AMD+IFVG range (bot),39,50,150,0.428,0.274,40.0
+2026 out-of-sample,AMD+IFVG range (bot),39,50,200,0.515,0.39,15.0
+2026 out-of-sample,AMD+IFVG range (bot),39,50,300,0.441,0.352,7.0
+2026 out-of-sample,AMD+IFVG range (bot),39,50,400,0.408,0.339,4.0
+2026 out-of-sample,AMD+IFVG 0.5R,39,50,100,0.0,0.0,
+2026 out-of-sample,AMD+IFVG 0.5R,39,50,150,0.076,0.0,98.0
+2026 out-of-sample,AMD+IFVG 0.5R,39,50,200,0.873,0.19,60.0
+2026 out-of-sample,AMD+IFVG 0.5R,39,50,300,0.713,0.192,41.0
+2026 out-of-sample,AMD+IFVG 0.5R,39,50,400,0.772,0.393,20.0
