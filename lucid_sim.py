@@ -97,7 +97,6 @@ if __name__ == "__main__":
     rows = []
     for period, m5 in sets.items():
         sym = "USATECHIDXUSD" if period.startswith("2025") else "NQ=F"
-        m5 = m5[m5.index.dayofweek < 5]
         days = sorted({d for d in m5.index.normalize()
                        if not m5[(m5.index >= d + pd.Timedelta(hours=9, minutes=30)) &
                                  (m5.index < d + pd.Timedelta(hours=9, minutes=35))].empty})

@@ -25,8 +25,7 @@ def first_payout(daily, n=20000, max_days=120, seed=11, target=250.0, min_days=3
 if __name__ == "__main__":
     ins, oos = load_sets(); rows = []
     for period, sym, m5 in (("2025", "USATECHIDXUSD", dict(ins)["USATECHIDXUSD"]), ("2026", "NQ=F", dict(oos)["NQ=F"])):
-        m5 = m5[m5.index.dayofweek < 5]
-        days = sorted(set(m5.index.normalize()))
+        days = sorted({d for d in set(m5.index.normalize()) if d.dayofweek < 5})  # keep Sunday-evening bars (Monday's Asian range); count weekdays only
         for name, tr in (("ORB 3R", L.orb_trades(m5, 3)), ("ORB hold-to-close", L.orb_trades(m5, 10)),
                          ("AMD+IFVG 0.5R", L.amd_trades(m5, sym, "0.5R")), ("AMD+IFVG range", L.amd_trades(m5, sym, "range"))):
             for risk in (75, 100, 150, 200):

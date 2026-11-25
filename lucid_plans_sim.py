@@ -44,7 +44,7 @@ def plan_mc(daily_eval, daily_fund, plan, n=20000, horizon=500, seed=9):
 if __name__ == "__main__":
     ins, oos = load_sets(); rows = []
     for period, sym, m5 in (("2025", "USATECHIDXUSD", dict(ins)["USATECHIDXUSD"]), ("2026", "NQ=F", dict(oos)["NQ=F"])):
-        m5 = m5[m5.index.dayofweek < 5]; days = sorted(set(m5.index.normalize()))
+        days = sorted({d for d in set(m5.index.normalize()) if d.dayofweek < 5})  # keep Sunday-evening bars (Monday's Asian range); count weekdays only
         tr = L.amd_trades(m5, sym, "0.5R")
         for plan in ("Pro", "Flex", "Direct"):
             for fund_risk in (150, 200, 300):

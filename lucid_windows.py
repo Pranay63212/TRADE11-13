@@ -21,7 +21,7 @@ def set_window(name):
 if __name__ == "__main__":
     ins, oos = load_sets(); rows = []
     for period, sym, m5 in (("2025", "USATECHIDXUSD", dict(ins)["USATECHIDXUSD"]), ("2026", "NQ=F", dict(oos)["NQ=F"])):
-        m5 = m5[m5.index.dayofweek < 5]; days = sorted(set(m5.index.normalize()))
+        days = sorted({d for d in set(m5.index.normalize()) if d.dayofweek < 5})  # keep Sunday-evening bars (Monday's Asian range); count weekdays only
         weeks = len(days) / 5
         for win in WINDOWS:
             set_window(win); tr = L.amd_trades(m5, sym, "0.5R")
