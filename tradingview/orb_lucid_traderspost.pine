@@ -1,22 +1,30 @@
-//@version=5
+//@version=6
 // ORB (9:30-9:35 ET candle), 3R target or hold to close - same rules as orb.py / lucid_sim.py.
 // Sends TradersPost-format JSON alerts -> TradersPost -> Tradovate -> Lucid account.
-// UNTESTED on TradingView: check it in the Strategy Tester and on a paper/eval account first.
+// Pine v6. Not yet confirmed on TradingView: check it in the Strategy Tester and on paper first.
 // Use on MNQ1! with a 5-minute chart.
-strategy("ORB 9:30 hold-to-close (TradersPost)", overlay=true, pyramiding=0,
-     default_qty_type=strategy.fixed, default_qty_value=1, calc_on_every_tick=false)
+strategy("ORB 9:30 (TradersPost)", overlay=true, pyramiding=0, default_qty_type=strategy.fixed, default_qty_value=1, calc_on_every_tick=false)
 
-riskUsd   = input.float(150, "Max $ risk per trade")
-maxQty    = input.int(20, "Max contracts (Lucid 25K: 20 micros)")
-costPts   = input.float(1.0, "Cost per contract (points)")
-targetR   = input.float(3.0, "Target in R (0 = hold to close). 3R suits a 40% consistency rule")
-exitHour  = input.int(15, "Exit hour ET")
-exitMin   = input.int(55, "Exit minute ET")
+entryMsg(string side, float qty, float stopPx, float tgtPx) =>
+    j = '{"ticker":"' + syminfo.ticker + '","action":"' + side + '","quantity":' + str.tostring(qty, "#")
+    j := j + ',"stopLoss":{"type":"stop","stopPrice":' + str.tostring(stopPx, format.mintick) + '}'
+    if not na(tgtPx)
+        j := j + ',"takeProfit":{"limitPrice":' + str.tostring(tgtPx, format.mintick) + '}'
+    j + '}'
+exitMsg() =>
+    '{"ticker":"' + syminfo.ticker + '","action":"exit"}'
+
+riskUsd  = input.float(150, "Max $ risk per trade")
+maxQty   = input.int(20, "Max contracts (Lucid 25K: 20 micros)")
+costPts  = input.float(1.0, "Cost per contract (points)")
+targetR  = input.float(3.0, "Target in R (0 = hold to close; keep 3 for the 40% consistency rule)")
+exitHour = input.int(15, "Exit hour ET")
+exitMin  = input.int(55, "Exit minute ET")
 
 tz = "America/New_York"
 h  = hour(time, tz)
 m  = minute(time, tz)
-isOpenBar = h == 9 and m == 30                       // the 9:30-9:35 candle (bar start time)
+isOpenBar = h == 9 and m == 30
 exitNow   = (h > exitHour or (h == exitHour and m >= exitMin)) and h < 17
 
 if isOpenBar and strategy.position_size == 0 and close != open
@@ -25,15 +33,9 @@ if isOpenBar and strategy.position_size == 0 and close != open
     dist   = math.abs(close - stopPx)
     qty    = math.min(maxQty, math.floor(riskUsd / ((dist + costPts) * syminfo.pointvalue)))
     if qty >= 1
-        tgtPx = isLong ? close + targetR * dist : close - targetR * dist
-        side = isLong ? "buy" : "sell"
-        msg  = '{"ticker":"' + syminfo.ticker + '","action":"' + side + '","quantity":' + str.tostring(qty) +
-               ',"stopLoss":{"type":"stop","stopPrice":' + str.tostring(stopPx, format.mintick) + '}' +
-               (targetR > 0 ? ',"takeProfit":{"limitPrice":' + str.tostring(tgtPx, format.mintick) + '}' : '') + '}'
-        strategy.entry(isLong ? "L" : "S", isLong ? strategy.long : strategy.short, qty, alert_message=msg)
-        exitMsg = '{"ticker":"' + syminfo.ticker + '","action":"exit"}'
-        strategy.exit(isLong ? "L-stop" : "S-stop", isLong ? "L" : "S", stop=stopPx,
-             limit=targetR > 0 ? tgtPx : na, alert_message=exitMsg)
+        float tgtPx = targetR > 0 ? (isLong ? close + targetR * dist : close - targetR * dist) : na
+        strategy.entry(isLong ? "L" : "S", isLong ? strategy.long : strategy.short, qty, alert_message=entryMsg(isLong ? "buy" : "sell", qty, stopPx, tgtPx))
+        strategy.exit(isLong ? "L-x" : "S-x", isLong ? "L" : "S", stop=stopPx, limit=tgtPx, alert_message=exitMsg())
 
 if exitNow and strategy.position_size != 0
-    strategy.close_all(comment="EOD", alert_message='{"ticker":"' + syminfo.ticker + '","action":"exit"}')
+    strategy.close_all(comment="EOD", alert_message=exitMsg())

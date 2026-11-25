@@ -1,4 +1,4 @@
-//@version=5
+//@version=6
 // AMD + Time + IFVG, 0.5R target - same rules as bot/strategy.py (use_ifvg=True, asia_hours=4).
 //   Asian range : 20:00-00:00 ET.   Bias: first sweep of the Asian high/low between 00:00 and 11:00.
 //   Entry       : 5m close through the latest opposing FVG formed since midnight, only in the
@@ -6,9 +6,17 @@
 //   Stop        : manipulation extreme (session low for longs / high for shorts).
 //   Target      : 0.5R.  Flat at 15:55 ET.
 // Sends TradersPost-format JSON alerts (TradersPost -> Tradovate -> Lucid).
-// UNTESTED on TradingView: check it in the Strategy Tester and on paper first. Use MNQ1!, 5-minute chart.
-strategy("AMD+IFVG 0.5R (TradersPost)", overlay=true, pyramiding=0,
-     default_qty_type=strategy.fixed, default_qty_value=1, calc_on_every_tick=false)
+// Pine v6. Not yet confirmed on TradingView: check it in the Strategy Tester and on paper first. Use MNQ1!, 5-minute chart.
+strategy("AMD+IFVG 0.5R (TradersPost)", overlay=true, pyramiding=0, default_qty_type=strategy.fixed, default_qty_value=1, calc_on_every_tick=false)
+
+// TradersPost message helpers (kept on single lines: Pine is strict about wrapped lines)
+entryMsg(string side, float qty, float stopPx, float tgtPx) =>
+    j = '{"ticker":"' + syminfo.ticker + '","action":"' + side + '","quantity":' + str.tostring(qty, "#")
+    j := j + ',"stopLoss":{"type":"stop","stopPrice":' + str.tostring(stopPx, format.mintick) + '}'
+    j := j + ',"takeProfit":{"limitPrice":' + str.tostring(tgtPx, format.mintick) + '}}'
+    j
+exitMsg() =>
+    '{"ticker":"' + syminfo.ticker + '","action":"exit"}'
 
 riskUsd  = input.float(200, "Max $ risk per trade (eval 200, funded 150)")
 maxQty   = input.int(20, "Max contracts (Lucid 25K: 20 micros)")
@@ -81,15 +89,11 @@ if (goLong or goShort) and strategy.position_size == 0
     if qty >= 1
         tgtPx = goLong ? close + targetR * dist : close - targetR * dist
         side  = goLong ? "buy" : "sell"
-        msg   = '{"ticker":"' + syminfo.ticker + '","action":"' + side + '","quantity":' + str.tostring(qty) +
-                ',"stopLoss":{"type":"stop","stopPrice":' + str.tostring(stopPx, format.mintick) + '}' +
-                ',"takeProfit":{"limitPrice":' + str.tostring(tgtPx, format.mintick) + '}}'
-        strategy.entry(goLong ? "L" : "S", goLong ? strategy.long : strategy.short, qty, alert_message=msg)
-        strategy.exit(goLong ? "L-x" : "S-x", goLong ? "L" : "S", stop=stopPx, limit=tgtPx,
-             alert_message='{"ticker":"' + syminfo.ticker + '","action":"exit"}')
+        strategy.entry(goLong ? "L" : "S", goLong ? strategy.long : strategy.short, qty, alert_message=entryMsg(side, qty, stopPx, tgtPx))
+        strategy.exit(goLong ? "L-x" : "S-x", goLong ? "L" : "S", stop=stopPx, limit=tgtPx, alert_message=exitMsg())
 
 if mins >= 15 * 60 + 55 and h < 17 and strategy.position_size != 0
-    strategy.close_all(comment="EOD", alert_message='{"ticker":"' + syminfo.ticker + '","action":"exit"}')
+    strategy.close_all(comment="EOD", alert_message=exitMsg())
 
 plot(aBars >= minAsia ? aHi : na, "Asian high", color=color.new(color.green, 0), style=plot.style_linebr)
 plot(aBars >= minAsia ? aLo : na, "Asian low", color=color.new(color.red, 0), style=plot.style_linebr)
